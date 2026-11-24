@@ -1,6 +1,6 @@
 // Nidra 100 to Zzz — offline support.
 // Bump VERSION whenever you upload new files, so phones pick up the update.
-const VERSION = 'nidra100-v4';
+const VERSION = 'nidra100-v5';
 const CORE = [
   './',
   './index.html',

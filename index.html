@@ -122,9 +122,9 @@ h1{font:500 30px/1.1 Fraunces,Georgia,serif;margin:0 0 4px;text-wrap:balance}
 <script>
 {
 /* ===== Anonymous analytics (Supabase) — fill these two in after creating the project ===== */
-const SUPABASE_URL='https://YOUR-PROJECT.supabase.co';
-const SUPABASE_ANON_KEY='YOUR-ANON-PUBLIC-KEY';
-const APP_VERSION='0.4';
+const SUPABASE_URL='https://befufairivyojcyxssla.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_Yr6cFJT68LhnkOuf60KwIg_troW0qif';   // public key: can only add rows
+const APP_VERSION='0.5';
 
 const T=(()=>{
   const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
@@ -147,7 +147,7 @@ const T=(()=>{
     const batch=q.slice(0,50);
     try{
       const r=await fetch(`${SUPABASE_URL}/rest/v1/cts_events`,{method:'POST',keepalive:true,
-        headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,Prefer:'return=minimal'},
+        headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Prefer:'return=minimal'},
         body:JSON.stringify(batch)});
       if(r.ok){q=q.slice(batch.length);keep()}
     }catch(e){}
@@ -181,7 +181,7 @@ fetch('tracks/index.json').then(r=>r.json()).then(j=>{INDEX=j;showLen()}).catch(
 const trackName=()=>`${st.voice}-${st.mode==='300'?'300':'100'}-${st.pace}-${st.sound}`;
 function startAt(){ // seconds into the track where playback should start
   if(st.mode!=='50'||!INDEX)return 0;
-  const s=INDEX[trackName()].stamps.find(x=>x[0]===50);return s?Math.max(0,s[1]-3):0;
+  const s=INDEX[trackName()].stamps.find(x=>x[0]===50);return s?Math.max(0,s[1]-1):0;
 }
 function showLen(){
   if(!INDEX||!INDEX[trackName()]){$('#len').textContent='';return}
