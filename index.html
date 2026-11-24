@@ -51,6 +51,28 @@ h1{font:500 30px/1.1 Fraunces,Georgia,serif;margin:0 0 4px;text-wrap:balance}
 .install p{margin:0;flex:1;font-size:14px;line-height:1.35}
 .install button{min-height:44px;padding:0 14px;border-radius:12px;border:0;background:var(--acc);color:#14123a;font:600 15px Figtree,sans-serif;cursor:pointer}
 .install .x{background:none;color:var(--mute);padding:0 6px;font-size:20px}
+.checkin{display:none;margin:0 0 20px;padding:16px;border:1px solid var(--line);border-radius:18px;background:rgba(241,233,210,.06)}
+.checkin.on{display:block}
+.checkin p{margin:0 0 12px;font:500 17px/1.3 Fraunces,Georgia,serif}
+.checkin .top{display:flex;gap:8px;align-items:flex-start}.checkin .top p{flex:1}
+.outs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.out{min-height:52px;padding:8px 6px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--ink);font:500 14px/1.2 Figtree,sans-serif;cursor:pointer}
+.out[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#14123a}
+.out:focus-visible,.link:focus-visible,.sheet input:focus-visible,.sheet textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.link{display:inline-flex;align-items:center;min-height:44px;margin-top:10px;padding:0;border:0;background:none;color:var(--acc);font:600 15px Figtree,sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+#fb{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(5,6,20,.7);z-index:5}
+#fb.on{display:flex}
+.sheet{width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:22px 20px max(22px,env(safe-area-inset-bottom));border-radius:22px 22px 0 0;background:#151842;border:1px solid var(--line);border-bottom:0}
+.sheet h2{font:500 24px/1.15 Fraunces,Georgia,serif;margin:0 0 4px}
+.sheet label{display:block;font:600 14px Figtree,sans-serif;color:var(--mute);margin:16px 0 8px}
+.sheet textarea,.sheet input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0f1235;color:var(--ink);font:16px/1.4 Figtree,sans-serif}
+.sheet textarea{min-height:110px;resize:vertical}
+.sheet .row2{display:flex;gap:10px;margin-top:18px}
+.sheet .row2 button{flex:1;min-height:52px;border-radius:14px;font:600 16px Figtree,sans-serif;cursor:pointer}
+.sheet .send{border:0;background:var(--ink);color:#14123a}.sheet .send:disabled{opacity:.5}
+.sheet .cancel{border:1px solid var(--line);background:none;color:var(--ink)}
+.small{color:var(--mute);font-size:13px;margin:6px 0 0}
+.msg{min-height:20px;margin:12px 0 0;font-size:14px}
 /* running view */
 #run{position:fixed;inset:0;background:#000;display:none;place-items:center;cursor:pointer;transition:background 3s}
 #run.on{display:grid}
@@ -75,6 +97,16 @@ h1{font:500 30px/1.1 Fraunces,Georgia,serif;margin:0 0 4px;text-wrap:balance}
     <button id="installBtn">Install</button>
     <button class="x" id="installX" aria-label="Dismiss">×</button>
   </div>
+
+  <section class="checkin" id="checkin" aria-live="polite">
+    <div class="top"><p id="ciQ">Did Nidra help you sleep last night?</p><button class="ghost" id="ciX" aria-label="Dismiss" style="min-height:36px;padding:0 10px">×</button></div>
+    <div class="outs" id="ciOuts">
+      <button class="out" data-o="asleep">Fell asleep</button>
+      <button class="out" data-o="drowsy">Got drowsy</button>
+      <button class="out" data-o="no_help">Didn’t help</button>
+    </div>
+    <p class="small" id="ciMsg" style="margin-top:10px"></p>
+  </section>
 
   <div class="moon" aria-hidden="true"><span id="preview">100</span></div>
 
@@ -106,7 +138,8 @@ h1{font:500 30px/1.1 Fraunces,Georgia,serif;margin:0 0 4px;text-wrap:balance}
   <button class="start" id="go">Start counting</button>
   <p class="note" id="len"></p>
   <p class="note">You can lock your phone — the countdown keeps playing. The voice slows and softens as it counts, then the background sound fades away after 1.</p>
-  <p class="note">We count anonymous usage (opens, settings used) to improve the app. No name, email or location is collected.</p>
+  <p class="note">We count anonymous usage (opens, settings used) to improve the app. No name or location is collected; your email only if you add it to feedback.</p>
+  <button class="link" id="fbOpen">Send feedback</button>
   <p class="note" id="err" role="alert" style="color:#ffb4a8"></p>
 </main>
 
@@ -114,6 +147,26 @@ h1{font:500 30px/1.1 Fraunces,Georgia,serif;margin:0 0 4px;text-wrap:balance}
   <button id="stop">Stop</button>
   <div id="num">100</div>
   <div id="hint">Close your eyes. You can lock your phone.</div>
+</div>
+
+<div id="fb" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
+  <form class="sheet" id="fbForm" novalidate>
+    <h2 id="fbTitle">Send feedback</h2>
+    <p class="small">Tell us how Nidra 100 is working for you.</p>
+    <label>Did it help you sleep?</label>
+    <div class="outs" id="fbOuts">
+      <button type="button" class="out" data-o="asleep">Fell asleep</button>
+      <button type="button" class="out" data-o="drowsy">Got drowsy</button>
+      <button type="button" class="out" data-o="no_help">Didn’t help</button>
+    </div>
+    <label for="fbText">Comments <span style="font-weight:400">(optional)</span></label>
+    <textarea id="fbText" maxlength="2000" placeholder="What would make it better? A voice, a sound, a pace…"></textarea>
+    <label for="fbEmail">Email <span style="font-weight:400">(optional)</span></label>
+    <input id="fbEmail" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="Only if you’d like a reply">
+    <p class="small">Used only to reply to your feedback. Never shared.</p>
+    <p class="msg" id="fbMsg" role="status"></p>
+    <div class="row2"><button type="button" class="cancel" id="fbCancel">Cancel</button><button type="submit" class="send" id="fbSend">Send</button></div>
+  </form>
 </div>
 
 <audio id="player" preload="none" playsinline></audio>
@@ -124,7 +177,7 @@ h1{font:500 30px/1.1 Fraunces,Georgia,serif;margin:0 0 4px;text-wrap:balance}
 /* ===== Anonymous analytics (Supabase) — fill these two in after creating the project ===== */
 const SUPABASE_URL='https://befufairivyojcyxssla.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_Yr6cFJT68LhnkOuf60KwIg_troW0qif';   // public key: can only add rows
-const APP_VERSION='0.5';
+const APP_VERSION='0.6';
 
 const T=(()=>{
   const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
@@ -156,7 +209,15 @@ const T=(()=>{
   function track(event,props={}){q.push({...base,event,props,created_at:new Date().toISOString()});keep();flush()}
   addEventListener('online',flush);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
-  return {track,first};
+  async function post(table,row){
+    if(!ready)return false;
+    try{
+      const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',
+        headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Prefer:'return=minimal'},body:JSON.stringify(row)});
+      return r.ok;
+    }catch(e){return false}
+  }
+  return {track,first,post,device:id,os};
 })();
 T.track('app_open',{first_open:T.first,referrer:document.referrer?new URL(document.referrer).hostname:''});
 /* ===== end analytics ===== */
@@ -259,8 +320,66 @@ $('#go').addEventListener('click',()=>{
     .then(()=>{requestAnimationFrame(tick)})
     .catch(()=>{$('#err').textContent='Tap Start again to begin playback.';stopAll()});
   T.track('session_start',{pace:st.pace,sound:st.sound,mode:st.mode,voice:st.voice});
+  try{localStorage.setItem('nidra_last',JSON.stringify({id:Date.now(),at:new Date().toISOString(),voice:st.voice,pace:st.pace,sound:st.sound,mode:st.mode}))}catch(e){}
 });
 run.addEventListener('click',e=>{if(e.target.id==='stop'){logStop();stopAll();return}wake()});
+
+/* ===== Feedback ===== */
+const lget=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
+const lset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const ctx=()=>{const l=lget('nidra_last');return l?{voice:l.voice,pace:l.pace,sound:l.sound,mode:l.mode,session_at:l.at}:{voice:st.voice,pace:st.pace,sound:st.sound,mode:st.mode}};
+const sendFeedback=row=>T.post('cts_feedback',{device_id:T.device,os:T.os,app_version:APP_VERSION,...row});
+
+/* morning check-in: ask once about the last countdown, 3–20 hours after it started */
+{
+  const card=$('#checkin'),last=lget('nidra_last'),asked=lget('nidra_asked')||0;
+  if(last&&last.id!==asked){
+    const age=(Date.now()-last.id)/36e5,h=new Date(last.id).getHours();
+    if(age>=3&&age<=20){
+      $('#ciQ').textContent=(h>=18||h<5)?'Did Nidra help you sleep last night?':'Did Nidra help you fall asleep last time?';
+      card.classList.add('on');
+    }
+  }
+  const done=()=>lset('nidra_asked',last&&last.id);
+  $('#ciX').addEventListener('click',()=>{done();card.classList.remove('on')});
+  $('#ciOuts').addEventListener('click',async e=>{
+    const b=e.target.closest('.out');if(!b)return;
+    card.querySelectorAll('.out').forEach(x=>{x.setAttribute('aria-pressed',x===b);x.disabled=true});
+    const ok=await sendFeedback({kind:'morning',outcome:b.dataset.o,context:ctx()});
+    if(ok){done();$('#ciMsg').textContent='Thank you! Sleep well tonight.';setTimeout(()=>card.classList.remove('on'),2200)}
+    else{$('#ciMsg').textContent='Couldn’t send. Check your connection and tap again.';card.querySelectorAll('.out').forEach(x=>x.disabled=false)}
+  });
+}
+
+/* feedback form */
+{
+  const wrap=$('#fb'),form=$('#fbForm'),msg=$('#fbMsg'),send=$('#fbSend');
+  let outcome=null,lastFocus=null;
+  const open=()=>{lastFocus=document.activeElement;msg.textContent='';wrap.classList.add('on');setTimeout(()=>$('#fbOuts .out').focus(),50)};
+  const close=()=>{wrap.classList.remove('on');lastFocus&&lastFocus.focus()};
+  $('#fbOpen').addEventListener('click',open);
+  form.addEventListener('input',()=>{if(!send.disabled)msg.textContent=''});
+  $('#fbCancel').addEventListener('click',close);
+  wrap.addEventListener('click',e=>{if(e.target===wrap)close()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&wrap.classList.contains('on'))close()});
+  $('#fbOuts').addEventListener('click',e=>{const b=e.target.closest('.out');if(!b)return;
+    outcome=b.getAttribute('aria-pressed')==='true'?null:b.dataset.o;
+    $('#fbOuts').querySelectorAll('.out').forEach(x=>x.setAttribute('aria-pressed',x.dataset.o===outcome))});
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const comment=$('#fbText').value.trim(),email=$('#fbEmail').value.trim();
+    if(!outcome&&!comment){msg.textContent='Pick an answer or write a comment.';return}
+    if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg.textContent='That email doesn’t look right — fix it or leave it blank.';return}
+    const lastSent=lget('nidra_fb_at')||0;
+    if(Date.now()-lastSent<60000){msg.textContent='Thanks — please wait a minute before sending more.';return}
+    send.disabled=true;msg.textContent='Sending…';
+    const ok=await sendFeedback({kind:'form',outcome,comment:comment||null,email:email||null,context:ctx()});
+    send.disabled=false;
+    if(ok){lset('nidra_fb_at',Date.now());msg.textContent='Thank you — got it!';form.reset();outcome=null;
+      $('#fbOuts').querySelectorAll('.out').forEach(x=>x.setAttribute('aria-pressed','false'));setTimeout(close,1600)}
+    else msg.textContent='Couldn’t send. Check your connection and try again — your text is still here.';
+  });
+}
 
 /* ===== Install / offline ===== */
 if('serviceWorker' in navigator&&window.isSecureContext){
