@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nidra 100 to Zzz — Count down to sleep</title>
+<meta name="theme-color" content="#0e1030">
+<meta name="description" content="Nidra 100 to Zzz: count down to sleep. A calm voice counts from 100 to 1 as you drift off.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nidra 100">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: hushed, slow, kind — a bedside thing, not a gadget.
+IDEA: a night sky seen from a pillow; the number is the moon you drift past.
+PICTURE: one large soft numeral glowing over a deep indigo field with faint stars.
+COLOUR and TYPE: indigo night #0e1030, moonlight #f1e9d2, one lavender accent #a99bff; Fraunces light for the number, Figtree for controls.
+LAYOUT: one calm column; numeral up top, a few big choice pills, one Start button.
+*/
+:root{color-scheme:dark;--bg:#0e1030;--bg2:#171a45;--ink:#f1e9d2;--mute:#a9a6c4;--acc:#a99bff;--line:rgba(241,233,210,.14)}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(120% 80% at 50% 0%,var(--bg2),var(--bg) 70%);background-color:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+.stars{position:fixed;inset:0;pointer-events:none;opacity:.7}
+main{position:relative;max-width:520px;margin:0 auto;padding:28px 20px 40px}
+h1{font:500 30px/1.1 Fraunces,Georgia,serif;margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--mute);margin:0 0 22px}
+.moon{display:grid;place-items:center;height:200px;margin:0 0 18px}
+.moon span{font:300 120px/1 Fraunces,Georgia,serif;color:var(--ink);text-shadow:0 0 40px rgba(241,233,210,.35)}
+.group{margin:0 0 18px}
+.group h2{font:600 14px/1.2 Figtree,sans-serif;color:var(--mute);margin:0 0 8px}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{min-height:44px;padding:10px 16px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--ink);font:500 15px Figtree,sans-serif;cursor:pointer}
+.pill[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#14123a}
+.pill:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:8px;align-items:center}
+select{flex:1;min-height:44px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:#14163b;color:var(--ink);font:16px Figtree,sans-serif}
+.ghost{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--ink);font:500 15px Figtree,sans-serif;cursor:pointer}
+.start{width:100%;min-height:58px;margin-top:10px;border:0;border-radius:18px;background:var(--ink);color:#14123a;font:600 18px Figtree,sans-serif;cursor:pointer}
+.note{color:var(--mute);font-size:13px;margin:14px 0 0}
+.install{display:none;gap:12px;align-items:center;margin:0 0 20px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:rgba(169,155,255,.08)}
+.install.on{display:flex}
+.install img{width:40px;height:40px;border-radius:10px;flex:none}
+.install p{margin:0;flex:1;font-size:14px;line-height:1.35}
+.install button{min-height:44px;padding:0 14px;border-radius:12px;border:0;background:var(--acc);color:#14123a;font:600 15px Figtree,sans-serif;cursor:pointer}
+.install .x{background:none;color:var(--mute);padding:0 6px;font-size:20px}
+/* running view */
+#run{position:fixed;inset:0;background:#000;display:none;place-items:center;cursor:pointer;transition:background 3s}
+#run.on{display:grid}
+#num{font:300 clamp(90px,30vw,180px)/1 Fraunces,Georgia,serif;color:var(--ink);opacity:.9;transition:opacity 1.6s ease}
+#run.dim #num{opacity:.08}
+#hint{position:absolute;bottom:max(28px,env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:var(--mute);font-size:14px;transition:opacity 1.5s}
+#run.dim #hint{opacity:0}
+#stop{position:absolute;top:20px;right:20px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);font:500 15px Figtree,sans-serif;transition:opacity 1.5s}
+#run.dim #stop{opacity:0}
+@media (prefers-reduced-motion:reduce){#num,#hint,#stop{transition:none}}
+</style>
+</head>
+<body>
+<svg class="stars" aria-hidden="true" id="stars"></svg>
+<main>
+  <h1>Nidra 100 to Zzz</h1>
+  <p class="sub">Count down to sleep. A soft voice counts slowly from 100 — close your eyes and follow along.</p>
+  <div class="install" id="install">
+    <img src="icons/icon-192.png" alt="">
+    <p id="installText">Add Nidra 100 to your home screen — it opens like an app and works offline.</p>
+    <button id="installBtn">Install</button>
+    <button class="x" id="installX" aria-label="Dismiss">×</button>
+  </div>
+  <div class="moon" aria-hidden="true"><span id="preview">100</span></div>
+
+  <div class="group"><h2>Pace</h2><div class="pills" data-k="pace">
+    <button class="pill" data-v="slow">Slow</button>
+    <button class="pill" data-v="slower">Slower</button>
+    <button class="pill" data-v="slowest">Slowest</button>
+  </div></div>
+
+  <div class="group"><h2>Count</h2><div class="pills" data-k="mode">
+    <button class="pill" data-v="50">From 50</button>
+    <button class="pill" data-v="100">From 100</button>
+    <button class="pill" data-v="300">300 down by 3s</button>
+  </div></div>
+
+  <div class="group"><h2>Background sound</h2><div class="pills" data-k="sound">
+    <button class="pill" data-v="none">None</button>
+    <button class="pill" data-v="rain">Rain</button>
+    <button class="pill" data-v="hum">Deep hum</button>
+  </div></div>
+
+  <div class="group"><h2>Voice</h2><div class="row">
+    <select id="voice" aria-label="Voice"></select>
+    <button class="ghost" id="try">Listen</button>
+  </div></div>
+
+  <button class="start" id="go">Start counting</button>
+  <p class="note">Keep the phone unlocked and face-down — the screen goes almost black. The voice slows and softens as it counts, then the background sound fades away after 1.</p>
+  <p class="note">We count anonymous usage (opens, settings used) to improve the app. No name, email or location is collected.</p>
+</main>
+
+<div id="run" role="button" aria-label="Tap to show controls">
+  <button id="stop">Stop</button>
+  <div id="num">100</div>
+  <div id="hint">Close your eyes. Tap anywhere for controls.</div>
+</div>
+
+<script>
+{
+/* ===== Anonymous analytics (Supabase) — fill these two in after creating the project ===== */
+const SUPABASE_URL='https://YOUR-PROJECT.supabase.co';
+const SUPABASE_ANON_KEY='YOUR-ANON-PUBLIC-KEY';
+const APP_VERSION='0.2';
+
+const T=(()=>{
+  const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+  const uuid=()=>(crypto.randomUUID?crypto.randomUUID():'10000000-1000-4000-8000-100000000000'.replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16)));
+  let id=ls.get('cts_device'),first=false;
+  if(!id){id=uuid();ls.set('cts_device',id);first=true}
+  const ua=navigator.userAgent;
+  const os=/iPhone|iPad|iPod/.test(ua)||(/Mac/.test(ua)&&navigator.maxTouchPoints>1)?'iOS':/Android/.test(ua)?'Android':/Windows/.test(ua)?'Windows':/Mac/.test(ua)?'Mac':'Other';
+  const browser=/SamsungBrowser/.test(ua)?'Samsung':/Edg\//.test(ua)?'Edge':/Firefox|FxiOS/.test(ua)?'Firefox':/Chrome|CriOS/.test(ua)?'Chrome':/Safari/.test(ua)?'Safari':'Other';
+  const base={device_id:id,os,browser,
+    is_pwa:!!(matchMedia('(display-mode: standalone)').matches||navigator.standalone),
+    lang:navigator.language||'',tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'',
+    screen:`${screen.width}x${screen.height}`,app_version:APP_VERSION};
+  const ready=!SUPABASE_URL.includes('YOUR-PROJECT');
+  let q=[];try{q=JSON.parse(ls.get('cts_q')||'[]')}catch(e){q=[]}
+  const keep=()=>ls.set('cts_q',JSON.stringify(q.slice(-200)));
+  let busy=false;
+  async function flush(){
+    if(!ready||busy||!q.length)return;busy=true;
+    const batch=q.slice(0,50);
+    try{
+      const r=await fetch(`${SUPABASE_URL}/rest/v1/cts_events`,{method:'POST',keepalive:true,
+        headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,Prefer:'return=minimal'},
+        body:JSON.stringify(batch)});
+      if(r.ok){q=q.slice(batch.length);keep()}
+    }catch(e){}
+    busy=false;
+  }
+  function track(event,props={}){q.push({...base,event,props,created_at:new Date().toISOString()});keep();flush()}
+  addEventListener('online',flush);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
+  return {track,first};
+})();
+T.track('app_open',{first_open:T.first,referrer:document.referrer?new URL(document.referrer).hostname:''});
+/* ===== end analytics ===== */
+
+const $=s=>document.querySelector(s);
+const synth=window.speechSynthesis;
+const PACE={slow:2.4,slower:3.4,slowest:4.6};
+let st={pace:'slower',mode:'100',sound:'rain',voice:''};
+try{Object.assign(st,JSON.parse(localStorage.getItem('cts')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('cts',JSON.stringify(st))}catch(e){}};
+
+/* stars */
+const sv=$('#stars');
+const drawStars=()=>{const W=innerWidth,H=innerHeight;let h='';let seed=7;const r=()=>(seed=(seed*9301+49297)%233280)/233280;
+  for(let i=0;i<70;i++){h+=`<circle cx="${(r()*W).toFixed(1)}" cy="${(r()*H*.7).toFixed(1)}" r="${(r()*1.2+.3).toFixed(2)}" fill="#f1e9d2" opacity="${(r()*.6+.2).toFixed(2)}"/>`}
+  sv.setAttribute('viewBox',`0 0 ${W} ${H}`);sv.setAttribute('width',W);sv.setAttribute('height',H);sv.innerHTML=h};
+drawStars();addEventListener('resize',drawStars);
+
+/* pills */
+document.querySelectorAll('.pills').forEach(g=>{
+  const k=g.dataset.k;
+  const sync=()=>g.querySelectorAll('.pill').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===st[k]));
+  g.addEventListener('click',e=>{const b=e.target.closest('.pill');if(!b)return;st[k]=b.dataset.v;save();sync();if(k==='mode')$('#preview').textContent=st.mode});
+  sync();
+});
+$('#preview').textContent=st.mode;
+
+/* voices */
+let voices=[];
+const loadVoices=()=>{
+  if(!synth)return;
+  const all=synth.getVoices().filter(v=>/^en/i.test(v.lang));
+  const pref=/(samantha|karen|moira|serena|daniel|google uk english female|google us english|female|natural)/i;
+  voices=all.sort((a,b)=>(pref.test(b.name)?1:0)-(pref.test(a.name)?1:0)).slice(0,12);
+  const sel=$('#voice');
+  sel.innerHTML=voices.length?voices.map((v,i)=>`<option value="${i}">${v.name.replace(/[<>&"]/g,'')} (${v.lang})</option>`).join(''):'<option>Default voice</option>';
+  const idx=voices.findIndex(v=>v.name===st.voice);if(idx>=0)sel.value=idx;
+};
+loadVoices();if(synth)synth.onvoiceschanged=loadVoices;
+$('#voice').addEventListener('change',e=>{const v=voices[e.target.value];st.voice=v?v.name:'';save()});
+const curVoice=()=>voices[$('#voice').value]||null;
+
+function say(text,rate,vol,done){
+  if(!synth){setTimeout(done,900);return}
+  const u=new SpeechSynthesisUtterance(text);
+  const v=curVoice();if(v)u.voice=v;
+  u.rate=rate;u.pitch=.85;u.volume=vol;
+  let fired=false;const fin=()=>{if(fired)return;fired=true;done&&done()};
+  u.onend=fin;u.onerror=fin;setTimeout(fin,5000);
+  synth.speak(u);
+}
+$('#try').addEventListener('click',()=>{T.track('voice_preview',{voice:st.voice||'default'});synth&&synth.cancel();say('Ninety nine… ninety eight… ninety seven',.75,1)});
+
+/* background sound */
+let ac,noiseGain,noiseSrc;
+function startSound(kind){
+  if(kind==='none')return;
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    ac.resume();
+    const len=ac.sampleRate*4,buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0);
+    let last=0;
+    for(let i=0;i<len;i++){const w=Math.random()*2-1;
+      if(kind==='hum'){last=(last+.02*w)/1.02;d[i]=last*3.5}else{d[i]=w*.5}}
+    noiseSrc=ac.createBufferSource();noiseSrc.buffer=buf;noiseSrc.loop=true;
+    const f=ac.createBiquadFilter();
+    if(kind==='rain'){f.type='bandpass';f.frequency.value=1400;f.Q.value=.4}else{f.type='lowpass';f.frequency.value=320}
+    noiseGain=ac.createGain();noiseGain.gain.value=0;
+    noiseSrc.connect(f).connect(noiseGain).connect(ac.destination);noiseSrc.start();
+    noiseGain.gain.linearRampToValueAtTime(kind==='rain'?.18:.35,ac.currentTime+6);
+  }catch(e){}
+}
+function fadeSound(sec){
+  if(!noiseGain||!ac)return;
+  const g=noiseGain.gain;g.cancelScheduledValues(ac.currentTime);g.setValueAtTime(g.value,ac.currentTime);
+  g.linearRampToValueAtTime(0,ac.currentTime+sec);
+  const s=noiseSrc;setTimeout(()=>{try{s.stop()}catch(e){}},sec*1000+200);
+}
+
+/* wake lock */
+let lock=null;
+async function keepAwake(){try{lock=await navigator.wakeLock.request('screen')}catch(e){lock=null}}
+document.addEventListener('visibilitychange',()=>{if(running&&document.visibilityState==='visible')keepAwake()});
+
+/* run */
+let running=false,timer=null,dimT=null,seq=[],i=0;
+const run=$('#run'),num=$('#num');
+function wake(){run.classList.remove('dim');clearTimeout(dimT);dimT=setTimeout(()=>run.classList.add('dim'),4000)}
+function buildSeq(){const out=[];if(st.mode==='300'){for(let n=300;n>=3;n-=3)out.push(n)}else{for(let n=+st.mode;n>=1;n--)out.push(n)}return out}
+
+function step(){
+  if(!running)return;
+  if(i>=seq.length){finish();return}
+  const n=seq[i],p=i/Math.max(1,seq.length-1);
+  num.textContent=n;
+  const rate=.8-.22*p, vol=1-.55*p;
+  const gap=PACE[st.pace]*(1+.7*p);
+  const t0=Date.now();
+  say(String(n),rate,vol,()=>{
+    const spent=(Date.now()-t0)/1000;
+    timer=setTimeout(()=>{i++;step()},Math.max(.6,gap-spent)*1000);
+  });
+}
+let startedAt=0;
+const mins=()=>Math.round((Date.now()-startedAt)/6000)/10;
+function finish(){
+  T.track('session_complete',{pace:st.pace,sound:st.sound,mode:st.mode,minutes:mins()});
+  running=false;num.textContent='';
+  $('#hint').textContent='Goodnight.';
+  fadeSound(st.sound==='none'?1:240);
+  setTimeout(()=>{if(!running)stopAll(false)},st.sound==='none'?3000:242000);
+}
+function stopAll(fade=true){
+  running=false;clearTimeout(timer);clearTimeout(dimT);
+  synth&&synth.cancel();if(fade)fadeSound(1.5);
+  try{lock&&lock.release()}catch(e){}lock=null;
+  run.classList.remove('on','dim');
+}
+$('#go').addEventListener('click',()=>{
+  if(synth){synth.cancel();const u=new SpeechSynthesisUtterance(' ');u.volume=0;synth.speak(u)} /* unlock audio on iPhone */
+  seq=buildSeq();i=0;running=true;startedAt=Date.now();
+  T.track('session_start',{pace:st.pace,sound:st.sound,mode:st.mode,voice:st.voice||'default'});
+  $('#hint').textContent='Close your eyes. Tap anywhere for controls.';
+  num.textContent=seq[0];
+  run.classList.add('on');wake();keepAwake();startSound(st.sound);
+  timer=setTimeout(step,1500);
+});
+/* ===== Install / offline ===== */
+if('serviceWorker' in navigator&&window.isSecureContext){
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+{
+  const box=$('#install'),btn=$('#installBtn');
+  const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  let dismissed=false;try{dismissed=localStorage.getItem('cts_install_x')==='1'}catch(e){}
+  const ua=navigator.userAgent;
+  const isIOS=/iPhone|iPad|iPod/.test(ua)||(/Mac/.test(ua)&&navigator.maxTouchPoints>1);
+  let deferred=null;
+  if(!standalone&&!dismissed){
+    addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;box.classList.add('on')});
+    if(isIOS){
+      $('#installText').textContent='Install: tap the Share button below, then “Add to Home Screen”.';
+      btn.style.display='none';box.classList.add('on');
+    }
+  }
+  btn.addEventListener('click',async()=>{
+    if(!deferred)return;deferred.prompt();
+    try{await deferred.userChoice}catch(e){}
+    deferred=null;box.classList.remove('on');
+  });
+  $('#installX').addEventListener('click',()=>{box.classList.remove('on');try{localStorage.setItem('cts_install_x','1')}catch(e){}});
+  addEventListener('appinstalled',()=>box.classList.remove('on'));
+}
+
+run.addEventListener('click',e=>{if(e.target.id==='stop'){
+  if(running)T.track('session_stop',{at:seq[i],pace:st.pace,sound:st.sound,mode:st.mode,minutes:mins()});
+  stopAll();return}wake()});
+}
+</script>
+</body>
