@@ -1,6 +1,6 @@
 // Nidra 100 to Zzz — offline support.
 // Bump VERSION whenever you upload new files, so phones pick up the update.
-const VERSION = 'nidra100-v3';
+const VERSION = 'nidra100-v4';
 const CORE = [
   './',
   './index.html',
@@ -29,6 +29,15 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.hostname.endsWith('supabase.co')) return;
   if (req.headers.has('range')) return;                // let the browser stream audio itself
+  if (url.pathname.endsWith('.mp3')) return;           // audio tracks stream straight from the server
+
+  // Track list: always try fresh first
+  if (url.pathname.endsWith('.json')) {
+    e.respondWith(fetch(req).then(res => {
+      const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res;
+    }).catch(() => caches.match(req)));
+    return;
+  }
 
   // Pages: try the network first so updates show up, fall back to the saved copy offline
   if (req.mode === 'navigate') {
